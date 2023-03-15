@@ -15,7 +15,7 @@ var filterMapReduce = states
         return state[0] === "a";
     })
 
-    // Using method chaining, use map()  to reduce each state to 3 characters.
+    // Using method chaining, use map() to reduce each state to 3 characters.
     .map(function(state) {
         return state.slice(0, 3);
     })
