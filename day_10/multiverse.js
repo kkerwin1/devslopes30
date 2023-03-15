@@ -1,4 +1,4 @@
-// Multiply two arrays.
+// Multiply two matrices.
 
 let array1 = [
     [1, 2, 3],
