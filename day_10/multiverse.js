@@ -14,7 +14,7 @@ let array2 = [
 /**
  * Returns an array consisting of a column of a multidimensional array.
  * @param {Array} array - Array to sort.
- * @param {*} columnNumber - Column number to select.
+ * @param {Number} columnNumber - Column number to select.
  * @returns {Array} columnArray - An array consisting of members of the column.
  */
 function getColumn(array, columnNumber) {
@@ -31,8 +31,8 @@ let array3 = [
     [],
 ];
 
-column0 = getColumn(array2, 0);
-column1 = getColumn(array2, 1);
+let column0 = getColumn(array2, 0);
+let column1 = getColumn(array2, 1);
 
 let a = 0;
 let b = 0;
