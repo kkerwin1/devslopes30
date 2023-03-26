@@ -1,0 +1,4 @@
+function getHexString(integer) {
+
+}
+
