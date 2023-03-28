@@ -93,4 +93,5 @@ function isSameNecklace(necklacePair) {
     // 3.0: The rotate algorithm failed; therefore, return false.
     return false;
 }
+
 for (necklacePair of necklacePairs) {console.log(`${necklacePair}: ${isSameNecklace(necklacePair)}`)};
