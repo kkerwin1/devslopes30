@@ -24,6 +24,12 @@ const necklacePairs = [
     ["", ""], // true
 ]
 
+/**
+ * Create a dictionary object with keys for each character in the string, and values representing
+ * the number of incidences of each character in the string.
+ * @param {String} necklaceString - A string representing a "necklace".
+ * @returns {Object} necklaceDict - Dictionary object with format described above.
+ */
 function buildNecklaceDictionary(necklaceString) {
     const necklaceDict = {};
     for (const character of necklaceString) {
@@ -36,23 +42,40 @@ function buildNecklaceDictionary(necklaceString) {
     return necklaceDict;
 }
 
+/**
+ * Determine if the two dictionary objects possess the same number of characters.
+ * @param {Object} leftDictionary - Dictionary of format created by buildNecklaceDictionary().
+ * @param {Object} rightDictionary - Dictionary of format created by buildNecklaceDictionary().
+ * @returns {Boolean} - Returns false if the two dictionary objects contain a different number of
+ * characters.
+ */
 function compareDictionaries(leftDictionary, rightDictionary) {
     for ([character, number] of Object.entries(leftDictionary)) {
-        if (number != rightDictionary[character]) {return false}
+        if (number != rightDictionary[character]) {return false};
     }
 }
 
+/**
+ * Determine whether two strings in an array are "the same" provided: characters from one end
+ * of the string can be cycled to the other end of the string.
+ * @param {Array} necklacePair - An array of strings.
+ * @returns {Boolean} - Whether the two strings in the provided array are "the same" according
+ * to the restrictions specified in the function description.
+ */
 function isSameNecklace(necklacePair) {
     [firstNecklace, secondNecklace] = [necklacePair[0], necklacePair[1]];
 
     // 1.0: Optimize for speed: quick checks.
-    /// 1.1: Length discrepancy.
+    /// 1.1: Same string.
+    if (firstNecklace === secondNecklace) {return true};
+
+    /// 1.2: Length discrepancy.
     if (firstNecklace.length != secondNecklace.length) {return false};
 
-    /// 1.2: Empty string.
+    /// 1.3: Empty string.
     if (firstNecklace.length === 0 && secondNecklace.length === 0) {return true};
 
-    /// 1.3: Character count discrepancy.
+    /// 1.4: Character count discrepancy.
     const firstDict = buildNecklaceDictionary(firstNecklace);
     const secondDict = buildNecklaceDictionary(secondNecklace);
     if (compareDictionaries(firstDict, secondDict) === false || 
@@ -66,6 +89,7 @@ function isSameNecklace(necklacePair) {
         const newString = characterArray.toString().replaceAll(",", "");
         if (newString === secondNecklace) {return true};
     }
+
     // 3.0: The rotate algorithm failed; therefore, return false.
     return false;
 }
