@@ -12,15 +12,15 @@ class CardDeck {
     shuffle() {
         this.currentDeck = [];
         let tempKeyList = this.keyList;
-        for (let i=0; i<tempKeyList.length-1; i++) {
-            let index = Math.floor(Math.random()*52);
-            let key = tempKeyList.slice(index);
-            this.currentDeck.push(key);
+        while (tempKeyList.length > 0) {
+            let index = Math.floor(Math.random()*tempKeyList.length);
+            let key = tempKeyList.splice(index, 1);
+            this.currentDeck.push(key[0]);
         }
     }
 
     dealCard(player) {
-        let key = this.currentDeck.shift();
+        let key = this.currentDeck.pop();
         player.addCard(key);
     }
 
@@ -35,11 +35,11 @@ class CardDeck {
 }
 
 class Player {
-    constructor(game, playerName) {
+    constructor(game, name) {
         this.game = game;
         this.interface = game.interface;
         this.dealer = game.dealer;
-        this.playerName = playerName;
+        this.name = name;
         this.deck = game.deck;
 
         this.purse = 100;
@@ -65,6 +65,11 @@ class Player {
     }
 
     addCard(key) {
+        //console.log(key);
+        //console.log("Deck", this.deck);
+        //console.log(this.deck.cards);
+        //console.log(this.deck.cards[key]);
+        //console.log(this.name);
         let cardName = this.deck.cards[key].name;
         let string = `${this.name} is dealt ${cardName}.`;
         this.interface.display(string);
@@ -131,10 +136,21 @@ class Player {
 }
 
 class Dealer extends Player {
-    constructor(game, playerName="Dealer") {
-        super(game, playerName);
+    constructor(game, name="Dealer") {
+        super(game, name);
         this.purse = undefined;
-        this.playerName = playerName;
+        this.name = name;
+        this.game = game;
+        this.interface = game.interface;
+        this.deck = this.game.deck;
+
+        this.hand = [];
+        this.handValue = 0;
+        this.softHand = false;
+
+        this.finished = false;
+        this.standing = false;
+        this.busted = false;
     }
 
     callBet(wager, player) {
