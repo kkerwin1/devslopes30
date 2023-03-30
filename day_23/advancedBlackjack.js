@@ -4,8 +4,8 @@ class CardDeck {
         this.interface = game.interface;
         this.dealer = game.dealer;
 
-        this.cardList = require("./cardList");
-        this.keyList = Object.keys(this.cardList);
+        this.cards = require("./cardList");
+        this.keyList = Object.keys(this.cards);
         this.currentDeck = [];
     }
 
@@ -65,6 +65,9 @@ class Player {
     }
 
     addCard(key) {
+        let cardName = this.deck.cards[key].name;
+        let string = `${this.name} is dealt ${cardName}.`;
+        this.interface.display(string);
         this.hand.push(key);
         this.calculateHandValue();
         this.isBusted();
@@ -96,7 +99,7 @@ class Player {
         let handValue = 0;
         this.softHand = false;
         for (let key of newKeyList) {
-            let value = this.game.deck.cardList[key].points;
+            let value = this.deck.cards[key].points;
             if (value === 0) {
                 // This is an ace. Determine whether to add 1 or 11.
                 if (21-handValue >= 11) {
@@ -204,7 +207,7 @@ class Interface {
     displayHand(player) {
         this.display(`${player.name} is holding: `);
         for (let key of player.hand) {
-            let cardName = this.deck.cardList[key];
+            let cardName = this.deck.cards[key];
             this.display(cardName);
         }
 
@@ -224,7 +227,7 @@ class Interface {
             if (player.purse >= (player.pot/2)) {
                 this.display("'Double down' means that you will double your bet, and get only one more card.");
                 this.display(`It will cost ${(player.pot/2)} to double down, and you have ${player.purse} remaining.`);
-                dd_choice = this.readlineSync.keyInYNStrict(`${player.name}, do you want to double down? (Y/N)? `);
+                dd_choice = this.readlineSync.keyInYNStrict(`${player.name}, do you want to double down? `);
                 if (dd_choice) {player.bet((player.pot/2))};
             }
         }
@@ -233,7 +236,7 @@ class Interface {
 
     prompt_hitOrStand(player) {
         if (player.name !== "Dealer") {
-            let hitOrStand = this.readlineSync.keyInYNStrict(`${player.name}, do you want to hit (Y/N)? `);
+            let hitOrStand = this.readlineSync.keyInYNStrict(`${player.name}, do you want to hit? `);
             if (hitOrStand) {
                 this.deck.addCard(player);
             } else {
@@ -281,7 +284,7 @@ class Interface {
 
     prompt_playAgain(player) {
         if (player.name !== "Dealer") {
-            let playAgain = this.readlineSync.keyInYNStrict(`${player.name}, do you want to play again (Y/N)? `);
+            let playAgain = this.readlineSync.keyInYNStrict(`${player.name}, do you want to play again? `);
             if (!playAgain) {
                 this.game.removePlayer(player);
             }
@@ -291,12 +294,12 @@ class Interface {
     prompt_createPlayer() {
         if (Object.keys(this.game.players).length < 2) {
             let createPlayer = false;
-            createPlayer = this.readlineSync.keyInYNStrict("Do you want to make a new player (Y/N)? ");
+            createPlayer = this.readlineSync.keyInYNStrict("Do you want to make a new player? ");
             if (createPlayer) {
-                playerName = this.readlineSync.question("What is your name? ");
+                let playerName = this.readlineSync.question("What is your name? ");
                 this.game.createPlayer(playerName);
             } else {
-                if (Object.keys(this.game.players).length === 0) {this.endGame()};
+                if (Object.keys(this.game.players).length === 0) {this.game.endGame()};
             }
         }
     }
@@ -366,6 +369,7 @@ class Game {
 
     endGame() {
         this.interface.display("Game over. Thanks for playing!");
+        process.exit(0);
     }
 
     isHandFinished() {
@@ -387,6 +391,8 @@ class Game {
     }
 
     startGame() {
+        this.interface.prompt_createPlayer();
+        this.interface.prompt_createPlayer();
         this.startHand();        
     }
 }
