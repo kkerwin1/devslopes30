@@ -11,7 +11,7 @@ class CardDeck {
 
     shuffle() {
         this.currentDeck = [];
-        let tempKeyList = this.keyList;
+        let tempKeyList = Object.keys(this.cards);
         while (tempKeyList.length > 0) {
             let index = Math.floor(Math.random()*tempKeyList.length);
             let key = tempKeyList.splice(index, 1);
@@ -65,11 +65,6 @@ class Player {
     }
 
     addCard(key) {
-        //console.log(key);
-        //console.log("Deck", this.deck);
-        //console.log(this.deck.cards);
-        //console.log(this.deck.cards[key]);
-        //console.log(this.name);
         let cardName = this.deck.cards[key].name;
         let string = `${this.name} is dealt ${cardName}.`;
         this.interface.display(string);
@@ -117,7 +112,6 @@ class Player {
                 handValue += value;
             }
         }
-        
         this.handValue = handValue;
     }
 
@@ -136,12 +130,12 @@ class Player {
 }
 
 class Dealer extends Player {
-    constructor(game, name="Dealer") {
+    constructor(game, name) {
         super(game, name);
         this.purse = undefined;
-        this.name = name;
+        this.name = "Dealer";
         this.game = game;
-        this.interface = game.interface;
+        this.interface = this.game.interface;
         this.deck = this.game.deck;
 
         this.hand = [];
@@ -160,7 +154,7 @@ class Dealer extends Player {
     hitOrStand() {
         if (this.handValue < 17) {
             this.deck.dealCard(this);
-        } else if (this.softHand) {
+        } else if (this.handValue === 17 && this.softHand) {
             this.deck.dealCard(this);
         } else {
             this.stand();
@@ -171,46 +165,40 @@ class Dealer extends Player {
 class Interface {
     constructor(game) {
         this.game = game;
-        this.deck = game.deck;
-        this.dealer = game.dealer;
+        this.deck = this.game.deck;
         this.readlineSync = require("readline-sync");
     }
 
     runMain() {
-        // Dealer hits on soft 17 for an additional 0.22% house edge, and more-importantly,
-        // additional implementation difficulty.
-        this.display("--- DEALER HITS ON SOFT 17 ---\n");
         while (this.game.isHandFinished() === false) {
             for (let player of Object.values(this.game.players)) {
-                this.runRound(this.game.round, player);
+                this.runRound(player);
             }
-            this.game.round++;
+            this.dealer.hitOrStand();
+            this.game.roundNumber++;
         }
         this.game.endHand();
     }
 
-    runRound(roundNumber, player) {
+    runRound(player) {
         this.displayHand(this.dealer);
-        if (player.name != "Dealer") {
-            this.display("---");
+        if (player.name !== "Dealer") {
             this.displayHand(player);
-            this.prompt_bet(player);
+            this.isBetPermitted(player);
 
             if (player.standing) {
-                this.display(`${player.name}, it is your turn, but you have stood.`);
+                this.display(`\n${player.name}, it is your turn, but you have stood.`);
             } else {
-                this.display(`${player.name}, it is your turn.`);
+                this.display(`\n${player.name}, it is your turn.`);
                 let choice_dd = false;
-                if (roundNumber === 1) {
+                if (this.game.roundNumber === 1) {
                     choice_dd = this.prompt_doubleDown(player);
                 }
 
                 if (!choice_dd) {
-                    this.prompt_hitOrStand();
+                    this.prompt_hitOrStand(player);
                 }
             }
-        } else {
-            this.dealer.hitOrStand();
         }
     }
 
@@ -221,13 +209,13 @@ class Interface {
     }
 
     displayHand(player) {
-        this.display(`${player.name} is holding: `);
+        this.display(`\n${player.name} is holding: `);
         for (let key of player.hand) {
-            let cardName = this.deck.cards[key];
+            let cardName = this.deck.cards[key].name;
             this.display(cardName);
         }
 
-        let handValue = player.calculateHandValue();
+        let handValue = player.handValue;
         let valueString = "";
         if (player.softHand) {
             valueString = `${player.name} holds cards totalling a SOFT ${handValue}.`;
@@ -235,6 +223,14 @@ class Interface {
             valueString = `${player.name} holds cards totalling ${handValue}.`;
         }
         this.display(valueString);
+
+        let statusString = false;
+        if (player.standing) {
+            statusString = `${player.name} is standing.`;
+        } else if (player.busted) {
+            statusString = `${player.name} has busted.`;
+        }
+        if (statusString) {this.display(statusString)};
     }
 
     prompt_doubleDown(player) {
@@ -242,9 +238,14 @@ class Interface {
         if (player.name !== "Dealer") {
             if (player.purse >= (player.pot/2)) {
                 this.display("'Double down' means that you will double your bet, and get only one more card.");
-                this.display(`It will cost ${(player.pot/2)} to double down, and you have ${player.purse} remaining.`);
+                this.display(`It will cost $${(player.pot/2)} to double down, and you have $${player.purse} remaining.`);
                 dd_choice = this.readlineSync.keyInYNStrict(`${player.name}, do you want to double down? `);
-                if (dd_choice) {player.bet((player.pot/2))};
+                if (dd_choice) {
+                    // Execute double down.
+                    player.bet(player.pot/2);
+                    this.deck.dealCard(player);
+                    player.stand();
+                }
             }
         }
         return dd_choice;
@@ -254,7 +255,7 @@ class Interface {
         if (player.name !== "Dealer") {
             let hitOrStand = this.readlineSync.keyInYNStrict(`${player.name}, do you want to hit? `);
             if (hitOrStand) {
-                this.deck.addCard(player);
+                this.deck.dealCard(player);
             } else {
                 player.stand();
             }
@@ -288,7 +289,7 @@ class Interface {
 
     prompt_bet(player) {
         if (player.name !== "Dealer") {
-            this.display(`The pot stands at $${player.pot}, and you have $${player.purse} remaining.`);
+            this.display(`\n${player.name}, the pot stands at $${player.pot}, and you have $${player.purse} remaining.`);
             let wager = 0;
             do {
                 wager = this.readlineSync.questionInt(`${player.name}, how many whole dollars do you want to increase your bet by? (Enter 0 to not bet): `);
@@ -324,12 +325,15 @@ class Interface {
 class Game {
     constructor() {
         this.interface = new Interface(this);
-        this.dealer = new Dealer(this);
         this.deck = new CardDeck(this);
+        this.dealer = new Dealer(this);
         this.players = {};
         this.firstHand = true;
+        
+        this.interface.dealer = this.dealer;
+        this.interface.deck = this.deck;
 
-        this.round = 0;
+        this.roundNumber = 1;
     }
 
     createPlayer(playerName) {
@@ -342,29 +346,35 @@ class Game {
     }
 
     endHand() {
-        for (let player of Objects.values(this.players)) {
+        for (let player of Object.values(this.players)) {
             let winnings = 0;
             let string = "";
             if (player.busted) {
                 winnings = 0;
-                string = `${player.name} busted, losing. Their purse is ${player.purse}.`;
+                string = `${player.name} busted, losing. Their purse is $${player.purse}.`;
             } else if (this.dealer.busted) {
                 winnings = player.pot;
-                string = `${player.name} won ${winnings}. Their purse is ${player.purse + winnings}.`;
+                string = `${player.name} won $${winnings}. Their purse is $${player.purse + winnings}.`;
             } else if (player.handValue > this.dealer.handValue) {
                 winnings = player.pot;
-                string = `${player.name} won ${winnings}. Their purse is ${player.purse + winnings}.`;
+                string = `${player.name} won $${winnings}. Their purse is $${player.purse + winnings}.`;
             } else if (player.handValue < this.dealer.handValue) {
                 winnings = 0;
-                string = `${player.name} lost. Their purse is ${player.purse}.`;
+                string = `${player.name} lost. Their purse is $${player.purse}.`;
             } else if (player.handValue === this.dealer.handValue) {
                 winnings = Math.ceil(player.pot/2);
-                string = `${player.name} has tied, earning ${winnings}. Their purse is ${player.purse + winnings}.`;
+                string = `${player.name} has tied, earning $${winnings}. Their purse is $${player.purse + winnings}.`;
             }
             this.interface.display(string);
             player.purse += winnings;
 
-            this.interface.prompt_playAgain(player);
+            if (player.purse > 0) {
+                this.interface.prompt_playAgain(player);
+            } else {
+                let string = `${player.name}, you have run out of money, and have been removed from the table.`;
+                this.interface.display(string);
+                this.removePlayer(player);
+            }
         }
 
         if (Object.values(this.players).length < 2) {this.interface.prompt_createPlayer()};
@@ -376,6 +386,15 @@ class Game {
     }
 
     startHand() {
+        /* 
+         * Dealer hits on a "soft" 17 for an additional 0.22% house edge, more 
+         * realism, and most-importantly, additional implementation difficulty.
+         *
+         * Dealer still stands on a "hard" 17.
+         */
+        this.interface.display("\n--- DEALER HITS ON SOFT 17 ---");
+        this.interface.display("--- DEALER STANDS ON HARD 17 ---\n");
+        this.roundNumber = 1;
         this.dealer.reset();
         for (let player of Object.values(this.players)) {player.reset()};
         this.deck.shuffle();
