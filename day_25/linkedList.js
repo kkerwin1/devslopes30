@@ -70,7 +70,6 @@ class LinkedList {
                 nextItem = this.itemList[nextIndex];
                 nextElement = this.elementDictionary[nextItem];
                 element.link(nextElement);
-            
             }
         }
     }
